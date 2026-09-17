@@ -1,0 +1,14 @@
+{
+  "name": "urinal-wiper-ai-proxy",
+  "version": "1.0.0",
+  "description": "Optional backend proxy for the Urinal Wiper simulator — keeps ANTHROPIC_API_KEY server-side only.",
+  "type": "module",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0"
+  }
+}

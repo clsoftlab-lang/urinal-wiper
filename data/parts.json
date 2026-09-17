@@ -1,0 +1,21 @@
+{
+  "currency": "KRW",
+  "disclaimer": "가격은 참고용이며 검증되지 않았습니다 (reference prices, not verified). 실제 견적은 공급처에 확인하십시오.",
+  "bom": [
+    { "id": "mcu", "ko": "제어 MCU 보드 (ESP32급)", "qty": 1, "unit_price": 8000, "category": "control" },
+    { "id": "servo", "ko": "방수 서보모터 (IP65, 고토크)", "qty": 1, "unit_price": 22000, "category": "actuator" },
+    { "id": "blade", "ko": "실리콘 와이퍼 블레이드 (교체형)", "qty": 2, "unit_price": 3500, "category": "actuator" },
+    { "id": "arm", "ko": "와이퍼 암 + 감속 기어 세트", "qty": 1, "unit_price": 12000, "category": "actuator" },
+    { "id": "pir", "ko": "PIR 인체감지 센서", "qty": 1, "unit_price": 2500, "category": "sensor" },
+    { "id": "tof", "ko": "ToF 거리센서 모듈", "qty": 1, "unit_price": 6000, "category": "sensor" },
+    { "id": "pump", "ko": "다이어프램 세정액 펌프", "qty": 1, "unit_price": 14000, "category": "fluid" },
+    { "id": "nozzle", "ko": "미스트 분사 노즐 + 역류방지 밸브", "qty": 1, "unit_price": 4500, "category": "fluid" },
+    { "id": "tank", "ko": "세정액 탱크 2L + 레벨 센서", "qty": 1, "unit_price": 9000, "category": "fluid" },
+    { "id": "blower", "ko": "소형 송풍기 (건조용)", "qty": 1, "unit_price": 11000, "category": "actuator" },
+    { "id": "tray", "ko": "경사 배수 트레이 + 필터", "qty": 1, "unit_price": 15000, "category": "drain" },
+    { "id": "housing", "ko": "항균 ABS 하우징 + 실링", "qty": 1, "unit_price": 18000, "category": "material" },
+    { "id": "driver", "ko": "모터 드라이버 보드", "qty": 1, "unit_price": 5000, "category": "control" },
+    { "id": "psu", "ko": "방수 전원부 (SMPS 12V)", "qty": 1, "unit_price": 9000, "category": "control" },
+    { "id": "misc", "ko": "체결부·배선·소모품 일체", "qty": 1, "unit_price": 8000, "category": "material" }
+  ]
+}

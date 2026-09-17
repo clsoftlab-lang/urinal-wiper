@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<!--
+  SPDX-License-Identifier: Apache-2.0
+  Copyright 2026 CLSOFTLAB (씨엘소프트랩), Dr. Lee Il-guk (이일국)
+-->
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>소변기 위생 와이퍼 · 인터랙티브 시뮬레이터</title>
+  <meta name="description" content="소변기 옆 자동 위생 와이퍼 개념 — 인터랙티브 메커니즘 시뮬레이터 + 설계/스펙/BOM (개념 검증용, 참고 비검증)." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚻</text></svg>" />
+</head>
+<body>
+  <a class="skip" href="#main">본문 바로가기</a>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">🚻</span>
+      <div>
+        <h1>소변기 위생 와이퍼</h1>
+        <p class="sub">Urinal Auto-Hygiene Wiper · 개념 시뮬레이터</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="badge badge-demo">데모 모드 (DEMO-MODE)</span>
+      <button id="themeToggle" class="btn ghost" type="button" aria-label="테마 전환">🌗 테마</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="섹션">
+    <button class="tab" role="tab" aria-selected="true" data-view="sim">🧪 시뮬레이터</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="spec">📐 설계/스펙</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="ai">🤖 AI 도우미</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="about">🎓 소개</button>
+  </nav>
+
+  <main id="main">
+    <!-- ================= 시뮬레이터 ================= -->
+    <section id="view-sim" class="view" aria-label="시뮬레이터">
+      <div class="grid sim-grid">
+        <div class="card stage-card">
+          <div class="stage-head">
+            <h2>메커니즘 (측면도)</h2>
+            <span id="phaseBadge" class="phase-badge">대기</span>
+          </div>
+          <!-- 인라인 SVG 측면도: 소변기 + 와이퍼 암 -->
+          <svg id="scene" viewBox="0 0 480 320" role="img" aria-label="소변기와 와이퍼 암 측면도">
+            <!-- 벽 -->
+            <rect x="0" y="0" width="480" height="320" fill="var(--wall)"/>
+            <rect x="0" y="0" width="30" height="320" fill="var(--wall2)"/>
+            <!-- 바닥 -->
+            <rect x="0" y="288" width="480" height="32" fill="var(--floor)"/>
+            <!-- 오염 얼룩 (splash) -->
+            <g id="splash" opacity="0">
+              <ellipse cx="150" cy="292" rx="42" ry="6" fill="var(--splash)"/>
+              <circle cx="120" cy="290" r="3" fill="var(--splash)"/>
+              <circle cx="185" cy="291" r="2.5" fill="var(--splash)"/>
+              <circle cx="165" cy="288" r="2" fill="var(--splash)"/>
+            </g>
+            <!-- 소변기 본체 -->
+            <g id="urinal">
+              <path d="M60 90 q60 -22 96 0 l6 120 q0 40 -54 40 q-54 0 -54 -40 z" fill="var(--porc)" stroke="var(--porcs)" stroke-width="3"/>
+              <ellipse cx="108" cy="96" rx="48" ry="12" fill="var(--porc2)" stroke="var(--porcs)" stroke-width="2"/>
+              <ellipse cx="108" cy="200" rx="18" ry="8" fill="var(--drainh)"/>
+            </g>
+            <!-- 세정 미스트 (rinse) -->
+            <g id="mist" opacity="0">
+              <circle cx="240" cy="250" r="2.5" fill="var(--mist)"/>
+              <circle cx="252" cy="262" r="2" fill="var(--mist)"/>
+              <circle cx="230" cy="264" r="2" fill="var(--mist)"/>
+              <circle cx="246" cy="276" r="2.5" fill="var(--mist)"/>
+            </g>
+            <!-- 건조 송풍 표시 -->
+            <g id="dryair" opacity="0">
+              <path d="M300 250 q30 -6 56 0" stroke="var(--air)" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path d="M300 264 q30 -6 56 0" stroke="var(--air)" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path d="M300 278 q30 -6 56 0" stroke="var(--air)" stroke-width="3" fill="none" stroke-linecap="round"/>
+            </g>
+            <!-- 와이퍼 유닛(하우징) -->
+            <rect x="360" y="150" width="70" height="150" rx="8" fill="var(--unit)" stroke="var(--units)" stroke-width="2"/>
+            <circle id="pivot" cx="395" cy="292" r="9" fill="var(--pivot)"/>
+            <!-- 와이퍼 암 (pivot 기준 회전) -->
+            <g id="arm" transform="rotate(0 395 292)">
+              <rect x="393" y="200" width="4" height="94" rx="2" fill="var(--arm)"/>
+              <rect x="378" y="196" width="34" height="10" rx="4" fill="var(--blade)"/>
+            </g>
+            <!-- 센서 -->
+            <g id="sensor">
+              <rect x="366" y="120" width="58" height="24" rx="6" fill="var(--unit)" stroke="var(--units)" stroke-width="2"/>
+              <circle id="sensorLed" cx="395" cy="132" r="6" fill="var(--led-off)"/>
+              <text x="395" y="115" text-anchor="middle" class="svg-lbl">SENSOR</text>
+            </g>
+            <!-- 사용자 실루엣 -->
+            <g id="person" opacity="0" transform="translate(150 0)">
+              <circle cx="60" cy="150" r="16" fill="var(--person)"/>
+              <rect x="46" y="168" width="28" height="70" rx="12" fill="var(--person)"/>
+              <rect x="48" y="236" width="10" height="52" rx="5" fill="var(--person)"/>
+              <rect x="62" y="236" width="10" height="52" rx="5" fill="var(--person)"/>
+            </g>
+          </svg>
+          <div class="controls-row">
+            <button id="btnPresence" class="btn primary" type="button" aria-pressed="false">👤 사용자 진입</button>
+            <button id="btnReset" class="btn ghost" type="button">↺ 초기화</button>
+          </div>
+          <p id="statusLine" class="status-line" role="status" aria-live="polite">대기 중 — 사용자가 감지되지 않았습니다.</p>
+        </div>
+
+        <div class="card">
+          <h2>제어 파라미터</h2>
+          <div class="control">
+            <label for="delay">감지 지연 <output id="delayOut">4</output> 초</label>
+            <input id="delay" type="range" min="1" max="15" step="1" value="4" />
+            <small>사용자 이탈 후 세정 시작까지 대기(오작동 방지).</small>
+          </div>
+          <div class="control">
+            <label for="speed">와이퍼 속도 <output id="speedOut">1.0</output> 배</label>
+            <input id="speed" type="range" min="0.5" max="2.0" step="0.1" value="1.0" />
+            <small>빠를수록 사이클은 짧지만 닦임 품질 저하 가능.</small>
+          </div>
+          <div class="control">
+            <label for="detergent">세정액 사용량 <output id="detergentOut">15</output> mL</label>
+            <input id="detergent" type="range" min="0" max="50" step="5" value="15" />
+            <small>많을수록 위생↑, 물·세정액 소비↑.</small>
+          </div>
+
+          <h2 class="mt">추정 결과</h2>
+          <div class="metrics">
+            <div class="metric"><span class="mv" id="mHygiene">–</span><span class="ml">위생 점수</span></div>
+            <div class="metric"><span class="mv" id="mWater">–</span><span class="ml">물/사이클(mL)</span></div>
+            <div class="metric"><span class="mv" id="mDet">–</span><span class="ml">세정액/사이클(mL)</span></div>
+            <div class="metric"><span class="mv" id="mTime">–</span><span class="ml">가동 시간(초)</span></div>
+          </div>
+          <div class="hbar" title="위생 점수"><div id="hygieneBar" class="hbar-fill"></div></div>
+
+          <h2 class="mt">카운터 / 유지보수</h2>
+          <div class="metrics">
+            <div class="metric"><span class="mv" id="mCycles">0</span><span class="ml">누적 사이클</span></div>
+            <div class="metric"><span class="mv" id="mBlade">–</span><span class="ml">블레이드 잔여</span></div>
+            <div class="metric"><span class="mv" id="mTank">–</span><span class="ml">세정액 잔여</span></div>
+          </div>
+          <div id="alerts" class="alerts" aria-live="polite"></div>
+          <div class="controls-row">
+            <button id="btnBlade" class="btn ghost" type="button">🔧 와이퍼 교체</button>
+            <button id="btnRefill" class="btn ghost" type="button">💧 세정액 보충</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 설계/스펙 ================= -->
+    <section id="view-spec" class="view" aria-label="설계/스펙" hidden>
+      <div class="card">
+        <h2>개념 개요</h2>
+        <p id="specConcept" class="lead"></p>
+        <p class="note" id="specStatus"></p>
+      </div>
+      <div class="card">
+        <h2>세정 사이클 단계</h2>
+        <ol id="phaseList" class="phase-list"></ol>
+      </div>
+      <div class="card">
+        <h2>서브시스템</h2>
+        <div id="subsysGrid" class="subsys-grid"></div>
+      </div>
+      <div class="card">
+        <h2>BOM (개략 부품/가격)</h2>
+        <p class="note" id="bomDisclaimer"></p>
+        <div class="table-wrap">
+          <table id="bomTable">
+            <thead><tr><th>부품</th><th>분류</th><th class="num">수량</th><th class="num">단가(원)</th><th class="num">합계(원)</th></tr></thead>
+            <tbody></tbody>
+            <tfoot><tr><td colspan="4" class="num">개략 합계 (참고, 비검증)</td><td class="num" id="bomTotal">–</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2>위생 / 유지보수 노트</h2>
+        <ul id="hygieneNotes" class="bullets"></ul>
+      </div>
+      <div class="card boundary">
+        <h2>개념 경계 (Concept boundaries)</h2>
+        <ul id="boundaries" class="bullets"></ul>
+      </div>
+    </section>
+
+    <!-- ================= AI ================= -->
+    <section id="view-ai" class="view" aria-label="AI 도우미" hidden>
+      <div class="card">
+        <p class="badge badge-demo">데모 모드 — 결정론적 Mock 응답 (API 키 없음)</p>
+        <p class="note">실제 Claude 응답은 <code>server/</code> 배포 + <code>ai/config.js</code> 의 <code>AI_ENDPOINT</code> 설정 시 활성화됩니다. <strong>키는 서버에만 존재합니다.</strong></p>
+      </div>
+      <div class="grid ai-grid">
+        <div class="card">
+          <h2>① AI 시설관리 도우미 챗봇</h2>
+          <div id="chatLog" class="chat-log" aria-live="polite"></div>
+          <form id="chatForm" class="chat-form">
+            <input id="chatInput" type="text" placeholder="예: 청소 스케줄 추천해줘 / 세정액 소비 줄이려면?" autocomplete="off" />
+            <button class="btn primary" type="submit">전송</button>
+          </form>
+        </div>
+        <div class="card">
+          <h2>② 시뮬 결과 설명</h2>
+          <p class="note">현재 슬라이더 설정을 바탕으로 물·세정액 트레이드오프를 설명합니다.</p>
+          <button id="btnExplain" class="btn primary" type="button">현재 설정 설명 생성</button>
+          <pre id="explainOut" class="ai-out" aria-live="polite"></pre>
+        </div>
+        <div class="card">
+          <h2>③ 설치·유지보수 가이드 생성</h2>
+          <label for="placeInput">설치 장소</label>
+          <input id="placeInput" type="text" value="일반 사무실 화장실" />
+          <button id="btnGuide" class="btn primary" type="button">가이드 생성</button>
+          <pre id="guideOut" class="ai-out" aria-live="polite"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 소개 ================= -->
+    <section id="view-about" class="view" aria-label="소개" hidden>
+      <div class="card">
+        <h2>🎓 아이디어 출처 / Idea origin</h2>
+        <p>이 프로젝트는 <strong>이일국 박사(Dr. Lee Il-guk)</strong>의 <strong>용인대학교(Yongin University)</strong> 창업 수업에서 나온 한 학생의 돋보이는 아이디어에서 영감을 받았습니다. 원 아이디어에 감사드리며, 어떤 문장·자료도 복제하지 않은 <strong>클린룸(clean-room)</strong> 방식으로 개념만 독립 재구성했습니다. 개인정보·상표는 포함하지 않습니다.</p>
+        <p class="en">This project was inspired by a standout student idea from Dr. Lee Il-guk's entrepreneurship class at Yongin University. Built clean-room with gratitude to the original idea — no copied sentences, no PII, no trademarks.</p>
+      </div>
+      <div class="card">
+        <h2>개념 경계 · DEMO-MODE</h2>
+        <p><strong>이 저장소는 개념 시뮬레이터 + 설계 문서입니다.</strong> 실제 제조·판매 제품이 아니며, 수치(위생 점수·소비량·시간)와 BOM 가격은 <strong>추정·참고용이며 검증되지 않았습니다.</strong> AI 기능은 <strong>기본적으로 Mock(데모)</strong>으로 동작합니다.</p>
+      </div>
+      <div class="card">
+        <h2>기여자 / Contributors</h2>
+        <ul class="bullets">
+          <li>Dr. Lee Il-guk (이일국)</li>
+          <li>LWJ</li>
+          <li>LMJ</li>
+          <li>Claude</li>
+        </ul>
+        <p class="note">License: 코드 Apache-2.0 · 문서/디자인 CC BY 4.0. <strong>Not an official Anthropic product.</strong></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>SPDX-License-Identifier: Apache-2.0 · © 2026 CLSOFTLAB (씨엘소프트랩), Dr. Lee Il-guk (이일국)</p>
+    <p class="note">개념 검증용 · 참고(비검증) · Not an official Anthropic product.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

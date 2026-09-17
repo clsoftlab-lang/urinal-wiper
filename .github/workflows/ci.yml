@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 CLSOFTLAB (씨엘소프트랩), Dr. Lee Il-guk (이일국)
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # 의존성 설치/실행/실제 API 호출 없음 — 정적 검증만 수행.
+      - name: node --check (all JS incl. ai/ + server/)
+        run: |
+          for f in $(find . -path ./node_modules -prune -o \( -name '*.js' -o -name '*.mjs' \) -print); do
+            echo "check $f"; node --check "$f";
+          done
+      - name: Run check.mjs (JSON + unit tests + AI mock + security)
+        run: node check.mjs
