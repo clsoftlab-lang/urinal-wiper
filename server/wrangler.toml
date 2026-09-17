@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 CLSOFTLAB (씨엘소프트랩), Dr. Lee Il-guk (이일국)
+#
+# Cloudflare Workers 배포 설정 (무인·무료 호스팅).
+# 배포:
+#   cd server
+#   npx wrangler deploy
+#   npx wrangler secret put ANTHROPIC_API_KEY   # 키는 시크릿에만 존재(브라우저/저장소 금지)
+#
+# 배포 후 라우트 URL(예: https://urinal-wiper-ai.<계정>.workers.dev/api/ai)을
+# 루트 ai/config.js 의 AI_ENDPOINT 에 넣으면 실제 Claude 가 활성화됩니다.
+
+name = "urinal-wiper-ai"
+main = "worker.js"
+compatibility_date = "2024-10-01"
+
+# 모델 상향(선택): 기본은 비용 우선(claude-haiku-4-5).
+# [vars]
+# AI_MODEL = "claude-sonnet-5"
+# AI_EFFORT = "low"

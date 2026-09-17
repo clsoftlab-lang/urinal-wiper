@@ -46,12 +46,32 @@ Three AI features, all working via a **deterministic Korean mock** in the demo:
 
 **Enable real Claude** (optional):
 
-1. Deploy `server/` (Node + `@anthropic-ai/sdk`). It exposes `POST /api/ai` and calls
-   `client.messages.stream({ model: "claude-opus-5", max_tokens: 2048, thinking: { type: "adaptive" }, ... })`.
-2. Set `ANTHROPIC_API_KEY` **on the server only** (env var). See `server/README.md` and `server/.env.example`.
+1. Deploy `server/` (Node + `@anthropic-ai/sdk`) — or the free Cloudflare Workers variant. It exposes
+   `POST /api/ai`. The model is **cost-first by default** (`claude-haiku-4-5`, configurable via `AI_MODEL`).
+2. Set `ANTHROPIC_API_KEY` **on the server only** (env var / Worker secret). See `server/README.md` and `server/.env.example`.
 3. Set `AI_ENDPOINT` in `ai/config.js` to the server URL.
 
 > **The API key lives server-side only. Never put a key in the browser or the repo.** `check.mjs` asserts `AI_ENDPOINT` is empty and that no real key format (`sk-ant-…`) is present.
+
+## ⚙️ 고도화 — 무인·저비용 실 AI 연동
+
+Upgraded to run **unmanned (무인)** on **cost-efficient** real Claude, while the demo keeps working with no key.
+
+- **Cost model** — default model **Claude Haiku 4.5** (~**$1 / $5 per MTok** in/out) + **prompt caching**
+  (`cache_control: ephemeral` on the stable per-task system prompt, so repeat calls read cache) + modest
+  per-task `max_tokens` (~700) + a **monthly token budget** (`AI_MONTHLY_TOKEN_CAP`, default 2,000,000) and a
+  per-IP rate limit (20/min). Raise quality any time with `AI_MODEL=claude-sonnet-5` or `claude-opus-5`.
+- **Rough cost estimate** — a typical task is ~1–2k input (mostly cached after the first call) + ~0.5k output.
+  At Haiku 4.5 prices that lands **well under ~$5 per 1,000 requests**; a Sonnet/Opus upgrade trades cost for depth.
+- **Free one-deploy (무인)** — `server/worker.js` + `server/wrangler.toml` run on **Cloudflare Workers**
+  (free tier = no server to babysit): `npx wrangler deploy` then `npx wrangler secret put ANTHROPIC_API_KEY`.
+- **Never breaks** — if the endpoint fails / returns `429 {fallback:true}` / the network is down, `ai/ai.js`
+  **auto-falls back to the deterministic mock**, so the app keeps working unmanned.
+- **Autonomous feature** — an on-load **"시설 위생 관리 팁 + 권장 세정 주기"** briefing, built from `cycle.js`
+  via `askAI("digest", …)`. It works offline through the mock too.
+
+> **API keys are server-side only — never in the browser or repo.** Haiku 4.5 does not accept adaptive
+> thinking/effort, so the proxy omits those for `claude-haiku*` (avoids 400s) and enables them for larger models.
 
 ## Repo layout
 

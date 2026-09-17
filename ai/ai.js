@@ -7,38 +7,54 @@
 // 어떤 경우에도 브라우저에는 API 키가 없다.
 
 import { AI_ENDPOINT } from "./config.js";
-import { summarize, projectUsage } from "../cycle.js";
+import { summarize, projectUsage, MAINT } from "../cycle.js";
 
 /**
- * @param {"chat"|"explain"|"guide"} task
+ * @param {"chat"|"explain"|"guide"|"digest"} task
  * @param {object} payload
  * @param {{onToken?: (t:string)=>void}} [opts]
  * @returns {Promise<string>} 전체 응답 텍스트
+ *
+ * 무인(autonomous) 정책: 엔드포인트 실패 / 429 {fallback:true} / 네트워크 오류 시
+ * 결정론적 Mock 으로 자동 폴백한다 → 앱은 절대 깨지지 않는다.
  */
 export async function askAI(task, payload = {}, { onToken } = {}) {
   if (!AI_ENDPOINT) {
     return mockRespond(task, payload, onToken);
   }
-  // 실제 백엔드 프록시 호출 (스트리밍)
-  const res = await fetch(AI_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ task, payload }),
-  });
-  if (!res.ok || !res.body) {
-    throw new Error(`AI 백엔드 오류: ${res.status}`);
-  }
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
   let full = "";
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
-    full += chunk;
-    if (onToken) onToken(chunk);
+  let streamed = false;
+  try {
+    // 실제 백엔드 프록시 호출 (스트리밍)
+    const res = await fetch(AI_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task, payload }),
+    });
+    // 예산/레이트 초과(429 fallback) → 무인 폴백
+    if (res.status === 429) {
+      return mockRespond(task, payload, onToken);
+    }
+    if (!res.ok || !res.body) {
+      throw new Error(`AI 백엔드 오류: ${res.status}`);
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      full += chunk;
+      streamed = true;
+      if (onToken) onToken(chunk);
+    }
+    return full;
+  } catch (_err) {
+    // 네트워크 오류/백엔드 다운 → Mock 으로 폴백(무인).
+    // 이미 일부 토큰이 흘러갔다면 중복 방지를 위해 받은 만큼만 반환.
+    if (streamed) return full;
+    return mockRespond(task, payload, onToken);
   }
-  return full;
 }
 
 /** 스트리밍을 흉내 내며 문자열을 조각내어 콜백에 흘려보낸다. */
@@ -90,6 +106,38 @@ export function buildMock(task, payload = {}) {
         : "- 와이퍼 속도는 적정 범위입니다.",
       "",
       `하루 ${usage.daily.cycles}회 가정 시 물 약 ${usage.daily.waterL}L/일, 월 세정액 약 ${usage.monthly.detergentL}L.`,
+      "(수치는 추정 모델이며 실측이 아닙니다.)",
+    ].join("\n");
+  }
+
+  if (task === "digest") {
+    // 무인 자동 브리핑: cycle 모델에서 위생 팁 + 권장 세정/점검 주기를 산출.
+    const usesPerDay = Number(payload.usesPerDay || 120);
+    const perDayDet = s.consumption.detergentMl * usesPerDay;
+    const bladeDays = Math.max(1, Math.round(MAINT.bladeLifeCycles / usesPerDay));
+    const tankDays = perDayDet > 0 ? Math.max(1, Math.round(MAINT.detergentTankMl / perDayDet)) : null;
+    const tip =
+      s.hygiene >= 80
+        ? "현재 설정은 위생 점수가 높습니다. 피크 시간 외에는 세정액을 소폭 낮춰 소비를 절약하세요."
+        : s.hygiene >= 60
+        ? "위생과 소비의 균형 구간입니다. 냄새가 느껴지면 세정액을 5mL 상향해 보세요."
+        : "위생 점수가 낮습니다. 세정액을 15mL 내외로 올리고 와이퍼 속도를 1.0배로 맞추세요.";
+    return [
+      "【오늘의 시설 위생 관리 브리핑 · 데모(Mock)】",
+      "",
+      `추정 위생 점수 ${s.hygiene}/100 · 사이클당 물 ${s.consumption.waterMl}mL · 세정액 ${s.consumption.detergentMl}mL`,
+      "",
+      "위생 관리 팁:",
+      "· " + tip,
+      "· 트레이·노즐 항균 세척은 주 1회, 건조(송풍) 단계는 생략하지 마세요.",
+      "· 사람 감지 중에는 구동부가 멈추도록 안전 인터록을 항상 확인하세요.",
+      "",
+      `권장 세정 주기 (하루 ${usesPerDay}회 가정):`,
+      `· 와이퍼 블레이드 점검/교체: 약 ${bladeDays}일마다 (권장 ${MAINT.bladeLifeCycles}사이클)`,
+      tankDays
+        ? `· 세정액 탱크 보충: 약 ${tankDays}일마다 (${MAINT.detergentTankMl}mL 기준)`
+        : "· 세정액 미사용 설정 — 탱크 보충 불필요(건식 스윕).",
+      `· 일 물 사용 추정 약 ${usage.daily.waterL}L, 월 세정액 약 ${usage.monthly.detergentL}L.`,
       "(수치는 추정 모델이며 실측이 아닙니다.)",
     ].join("\n");
   }

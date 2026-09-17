@@ -41,12 +41,32 @@ node check.mjs   # JSON 파싱 + 단위 테스트 + AI Mock + 보안 검사
 
 **실제 Claude 연동(선택):**
 
-1. `server/` 배포 (Node + `@anthropic-ai/sdk`). `POST /api/ai` 에서
-   `client.messages.stream({ model: "claude-opus-5", max_tokens: 2048, thinking: { type: "adaptive" }, ... })` 호출.
-2. `ANTHROPIC_API_KEY` 를 **서버 환경변수로만** 설정 (`server/README.md`, `server/.env.example` 참고).
+1. `server/` 배포 (Node + `@anthropic-ai/sdk`) 또는 무료 Cloudflare Workers 변형. `POST /api/ai` 제공.
+   모델은 **비용 우선 기본값**(`claude-haiku-4-5`, `AI_MODEL` 로 상향 가능).
+2. `ANTHROPIC_API_KEY` 를 **서버 환경변수/Worker 시크릿으로만** 설정 (`server/README.md`, `server/.env.example` 참고).
 3. `ai/config.js` 의 `AI_ENDPOINT` 를 서버 URL 로 설정.
 
 > **API 키는 서버에만 존재합니다. 브라우저/저장소에 절대 넣지 마세요.** `check.mjs` 가 `AI_ENDPOINT` 빈 값과 실제 키 형식(`sk-ant-…`) 미포함을 검증합니다.
+
+## ⚙️ 고도화 — 무인·저비용 실 AI 연동
+
+**무인(autonomous)** 으로 굴러가고 **비용 합리적**으로 실제 Claude 를 쓰도록 고도화했습니다. 데모는 키 없이 그대로 동작합니다.
+
+- **비용 모델** — 기본 모델 **Claude Haiku 4.5**(약 **$1 / $5 per MTok** 입력/출력) + **프롬프트 캐싱**
+  (안정적인 태스크 시스템 프롬프트에 `cache_control: ephemeral` → 반복 호출은 캐시 읽기로 저렴) + 태스크별
+  소박한 `max_tokens`(~700) + **월간 토큰 예산**(`AI_MONTHLY_TOKEN_CAP`, 기본 200만) + IP당 분당 20회 레이트리밋.
+  품질이 필요하면 `AI_MODEL=claude-sonnet-5` 또는 `claude-opus-5` 로 언제든 상향.
+- **대략적 비용** — 태스크당 입력 ~1~2k(첫 호출 후 대부분 캐시) + 출력 ~0.5k 가정 시, Haiku 4.5 요금으로
+  **1,000요청당 약 $5 미만** 수준. Sonnet/Opus 로 올리면 비용↔깊이 트레이드오프.
+- **무료 원-디플로이(무인)** — `server/worker.js` + `server/wrangler.toml` 로 **Cloudflare Workers**(무료 티어,
+  관리할 서버 없음)에 배포: `npx wrangler deploy` 후 `npx wrangler secret put ANTHROPIC_API_KEY`.
+- **절대 안 깨짐** — 엔드포인트 실패 / `429 {fallback:true}` / 네트워크 오류 시 `ai/ai.js` 가 **결정론적 Mock 으로
+  자동 폴백** → 앱은 무인으로 계속 동작.
+- **무인 자동 기능** — 페이지 로드 시 **"시설 위생 관리 팁 + 권장 세정 주기"** 브리핑을 `cycle.js` +
+  `askAI("digest", …)` 로 자동 생성. 오프라인(Mock)에서도 동작합니다.
+
+> **API 키는 서버에만 — 브라우저/저장소 금지.** Haiku 4.5 는 adaptive thinking/effort 를 받지 않으므로 프록시는
+> `claude-haiku*` 에서 이를 생략(400 방지)하고, 상위 모델에서만 활성화합니다.
 
 ## 🎓 아이디어 출처
 

@@ -307,6 +307,19 @@ function initAI() {
     catch (err) { out.textContent = "오류: " + err.message; }
   });
 }
+// 무인 자동 브리핑: 페이지 로드 시 cycle 모델 + askAI("digest") 로 위생 팁/권장 세정 주기를 생성.
+// AI_ENDPOINT 미설정/오류 시 askAI 가 Mock 으로 자동 폴백하므로 오프라인에서도 동작한다.
+async function initDigest() {
+  const out = $("digestOut");
+  if (!out) return;
+  out.textContent = "";
+  try {
+    await askAI("digest", aiPayload({ usesPerDay: 120 }), { onToken: (t) => { out.textContent += t; } });
+  } catch (e) {
+    out.textContent = "브리핑을 불러오지 못했습니다.";
+  }
+}
+
 function appendChat(role, text) {
   const el = document.createElement("div");
   el.className = "msg " + role;
@@ -344,5 +357,6 @@ function init() {
   });
   refreshMetrics();
   loadSpecs();
+  initDigest();
 }
 init();
